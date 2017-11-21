@@ -27,23 +27,6 @@ variable "s3_uri" {
     default     = "s3n://geotrellis-test/terraform-logs/"
 }
 
-variable "jmx_port" {
-    type        = "string"
-    description = "JMX port"
-    default     = "9333"
-}
-
-variable "rmi_port" {
-    type        = "string"
-    description = "RMI port"
-    default     = "1099"
-}
-
-variable "jmx_ip" {
-    type        = "string"
-    description = "IP address from which JMX connection will be allowed"
-}
-
 variable "worker_count" {
     type        = "string"
     description = "The number of worker nodes"
