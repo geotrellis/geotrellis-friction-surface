@@ -4,6 +4,18 @@ variable "region" {
     default     = "us-east-1"
 }
 
+variable "bs_bucket" {
+    type        = "string"
+    description = "S3 Bucket containing the boostrap script (e.g. bucket if the whole path is s3://bucket/containing/bootstrap)"
+    default    = "geotrellis-test"  
+}
+
+variable "bs_prefix" {
+  type        = "string"
+  description = "The prefix of the location of the bootstrap script (e.g. containing/bootstrap if the whole path is s3://bucket/containing/bootstrap)"
+  default     = "geotrellis-friction-surface"
+}
+
 variable "key_name" {
     type        = "string"
     description = "The name of the EC2 secret key (primarily for SSH access)"

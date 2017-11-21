@@ -29,20 +29,10 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     name           = "ingest-core"
   }
 
-  # bootstrap_action {
-  #   path = "s3://${var.rpm_bucket}/${var.rpm_prefix}/bootstrap.sh"
-  #   name = "geopyspark"
-  #   args = [
-  #     "s3://${var.rpm_bucket}/${var.rpm_prefix}",
-  #     "${var.nb_bucket}",
-  #     "${var.jupyterhub_oauth_module}",
-  #     "${var.jupyterhub_oauth_class}",
-  #     "${var.oauth_client_id}",
-  #     "${var.oauth_client_secret}"
-  #   ]
-  # }
-
-  # depends_on = ["aws_s3_bucket_object.bootstrap"]
+  bootstrap_action {
+    path = "s3://${var.bs_bucket}/${var.bs_prefix}/bootstrap.sh"
+    name = "patch configuration"
+  }
 }
 
 output "emr-id" {
