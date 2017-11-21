@@ -1,5 +1,5 @@
 resource "aws_emr_cluster" "emr-spark-cluster" {
-  name          = "GeoNotebook + GeoPySpark Cluster"
+  name          = "geotrellis-friction-surface Ingest"
   applications  = ["Hadoop", "Spark", "Ganglia"]
   log_uri       = "${var.s3_uri}"
   release_label = "emr-5.7.0"
@@ -18,7 +18,7 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     instance_count = 1
     instance_role  = "MASTER"
     instance_type  = "m3.xlarge"
-    name           = "geopyspark-master"
+    name           = "ingest-master"
   }
 
   instance_group {
@@ -26,23 +26,23 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     instance_count = "${var.worker_count}"
     instance_role  = "CORE"
     instance_type  = "m3.xlarge"
-    name           = "geopyspark-core"
+    name           = "ingest-core"
   }
 
-  bootstrap_action {
-    path = "s3://${var.rpm_bucket}/${var.rpm_prefix}/bootstrap.sh"
-    name = "geopyspark"
-    args = [
-      "s3://${var.rpm_bucket}/${var.rpm_prefix}",
-      "${var.nb_bucket}",
-      "${var.jupyterhub_oauth_module}",
-      "${var.jupyterhub_oauth_class}",
-      "${var.oauth_client_id}",
-      "${var.oauth_client_secret}"
-    ]
-  }
+  # bootstrap_action {
+  #   path = "s3://${var.rpm_bucket}/${var.rpm_prefix}/bootstrap.sh"
+  #   name = "geopyspark"
+  #   args = [
+  #     "s3://${var.rpm_bucket}/${var.rpm_prefix}",
+  #     "${var.nb_bucket}",
+  #     "${var.jupyterhub_oauth_module}",
+  #     "${var.jupyterhub_oauth_class}",
+  #     "${var.oauth_client_id}",
+  #     "${var.oauth_client_secret}"
+  #   ]
+  # }
 
-  depends_on = ["aws_s3_bucket_object.bootstrap"]
+  # depends_on = ["aws_s3_bucket_object.bootstrap"]
 }
 
 output "emr-id" {

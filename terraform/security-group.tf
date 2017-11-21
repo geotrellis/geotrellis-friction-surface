@@ -14,10 +14,17 @@ resource "aws_security_group" "security-group" {
   }
 
   ingress {
-    from_port   = "${var.jupyterhub_port}"
-    to_port     = "${var.jupyterhub_port}"
+    from_port   = "${var.jmx_port}"
+    to_port     = "${var.jmx_port}"
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["${var.jmx_ip}/32"]
+  }
+
+  ingress {
+    from_port   = "${var.rmi_port}"
+    to_port     = "${var.rmi_port}"
+    protocol    = "tcp"
+    cidr_blocks = ["${var.jmx_ip}/32"]
   }
 
   egress {
