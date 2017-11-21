@@ -10,5 +10,16 @@ is_master() {
 }
 
 if is_master; then
-    sudo sed -i 's,\(^.*extraJavaOptions.*\),\1  -Djava.net.preferIPv4Stack=true -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9333 -Dcom.sun.management.jmxremote.rmi.port=9333 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=localhost,' /etc/spark/conf.dist/spark-defaults.conf
+    cat <<EOF > /tmp/patch.sh
+#!/bin/bash
+
+while [ ! -e "/etc/spark/conf.dist/spark-defaults.conf" ]; do
+   sleep 3
+done
+sed -i 's,\(^.*extraJavaOptions.*\),\1  -Djava.net.preferIPv4Stack=true -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=9333 -Dcom.sun.management.jmxremote.rmi.port=9333 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.local.only=false -Djava.rmi.server.hostname=localhost,' /etc/spark/conf.dist/spark-defaults.conf
+EOF
+
+    cat /tmp/patch.sh # log
+    chmod ugo+x /tmp/patch.sh
+    sudo /tmp/patch.sh &
 fi
