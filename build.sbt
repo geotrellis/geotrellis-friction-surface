@@ -1,6 +1,6 @@
 import Dependencies._
 
-val gtVersion        = "1.2.0-SNAPSHOT"
+val gtVersion        = "1.2.0-RC2"
 
 
 organization := "com.azavea"
@@ -16,6 +16,7 @@ libraryDependencies ++= Seq(
 )
 
 resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/geotrellis-snapshots"
+resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
 
 test in assembly := {}
 
@@ -41,34 +42,34 @@ assemblyMergeStrategy in assembly := {
   case _ => MergeStrategy.first
 }
 
-sparkAwsRegion := "us-east-1"
-sparkSubnetId := Some("subnet-4f553375")
-sparkS3JarFolder := "s3://geotrellis-test/eac/srtm-ingest"
-sparkInstanceCount := 51
-sparkClusterName := "XTerrain collab tests"
-sparkEmrRelease := "emr-5.4.0"
-sparkEmrServiceRole := "EMR_DefaultRole"
-sparkInstanceType := "m3.2xlarge"
-sparkInstanceBidPrice := Some("0.5")
-sparkInstanceRole := "EMR_EC2_DefaultRole"
-sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value
-  .withEc2KeyName("geotrellis-emr")
+// sparkAwsRegion := "us-east-1"
+// sparkSubnetId := Some("subnet-4f553375")
+// sparkS3JarFolder := "s3://geotrellis-test/eac/srtm-ingest"
+// sparkInstanceCount := 51
+// sparkClusterName := "XTerrain collab tests"
+// sparkEmrRelease := "emr-5.4.0"
+// sparkEmrServiceRole := "EMR_DefaultRole"
+// sparkInstanceType := "m3.2xlarge"
+// sparkInstanceBidPrice := Some("0.5")
+// sparkInstanceRole := "EMR_EC2_DefaultRole"
+// sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value
+//   .withEc2KeyName("geotrellis-emr")
 
-import sbtemrspark.EmrConfig
-sparkEmrConfigs := Some(
-  Seq(
-    EmrConfig("spark").withProperties(
-      "spark.driver-memory" -> "10000M",
-      "spark.driver.cores" -> "4",
-      "spark.executor.memory" -> "5120M",
-      "spark.executor.cores" -> "2",
-      "spark.driver.maxResultSize" -> "3g",
-      "spark.dynamicAllocation.enabled" -> "true",
-      "spark.yarn.executor.memoryOverhead" -> "700M",
-      "spark.yarn.driver.memoryOverhead" -> "0M"
-    ),
-    EmrConfig("yarn-site").withProperties(
-      "yarn.resourcemanager.am.max-attempts" -> "1"
-    )
-  )
-)
+// import sbtemrspark.EmrConfig
+// sparkEmrConfigs := Some(
+//   Seq(
+//     EmrConfig("spark").withProperties(
+//       // "spark.driver-memory" -> "10000M",
+//       // "spark.driver.cores" -> "4",
+//       // "spark.executor.memory" -> "5120M",
+//       // "spark.executor.cores" -> "2",
+//       // "spark.driver.maxResultSize" -> "3g",
+//       // "spark.dynamicAllocation.enabled" -> "true",
+//       // "spark.yarn.executor.memoryOverhead" -> "700M",
+//       // "spark.yarn.driver.memoryOverhead" -> "0M"
+//     ),
+//     EmrConfig("yarn-site").withProperties(
+//       "yarn.resourcemanager.am.max-attempts" -> "1"
+//     )
+//   )
+// )
