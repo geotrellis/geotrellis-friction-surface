@@ -7,7 +7,7 @@ variable "region" {
 variable "bs_bucket" {
     type        = "string"
     description = "S3 Bucket containing the boostrap script (e.g. bucket if the whole path is s3://bucket/containing/bootstrap)"
-    default    = "geotrellis-test"  
+    default    = "geotrellis-test"
 }
 
 variable "bs_prefix" {
