@@ -30,7 +30,6 @@ variable "s3_uri" {
 variable "worker_count" {
     type        = "string"
     description = "The number of worker nodes"
-    default     = "1"
 }
 
 variable "emr_service_role" {
