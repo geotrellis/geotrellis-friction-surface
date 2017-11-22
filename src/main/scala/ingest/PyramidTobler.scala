@@ -22,9 +22,9 @@ import org.apache.spark.serializer.KryoSerializer
 object ToblerPyramid {
   def main(args: Array[String]): Unit = {
 
-    val catalog = "s3://geotrellis-test/dg-srtm"
     val bucket = "geotrellis-test"
     val prefix = "dg-srtm"
+    val catalog = s"s3://${bucket}/${prefix}"
 
     val layerName = "srtm-wsg84-gps"
 
@@ -37,24 +37,31 @@ object ToblerPyramid {
       } else {
         5000
       }
+    val executors =
+      if (args.length > 1) {
+        args(1)
+      } else {
+        "51"
+      }
 
     val conf = new SparkConf()
       .setIfMissing("spark.master", "local[*]")
       .setAppName("Ingest DEM")
       .set("spark.serializer", classOf[KryoSerializer].getName)
       .set("spark.kryo.registrator", classOf[KryoRegistrator].getName)
-      .set("spark.driver-memory", "10000m")
+      .set("spark.driver-memory", "10G")
       .set("spark.driver.cores", "4")
-      .set("spark.executor.memory", "5120M")
-      .set("spark.executor.cores", "2")
-      .set("spark.yarn.executor.memoryOverhead","900M")
-      .set( "spark.driver.maxResultSize", "3g")
+      .set("spark.executor.instances", executors)
+      .set("spark.executor.memory", "10G")
+      .set("spark.executor.cores", "4")
+      .set("spark.yarn.executor.memoryOverhead","2G")
+      .set("spark.driver.maxResultSize", "3G")
 
     implicit val sc = new SparkContext(conf)
 
     try {
       val layerReader = S3LayerReader(bucket, prefix)
-      val layerWriter = if (conf.get("spark.master") == "local[*]")
+      val layerWriter = if (conf.get("spark.master").startsWith("local"))
                           FileLayerWriter("/tmp/dg-srtm")
                         else
                           S3LayerWriter(bucket, prefix)
@@ -65,11 +72,20 @@ object ToblerPyramid {
         -120.36209106445312,38.8407772667165,
         -119.83612060546874,39.30242456041487)
 
-      val srtm =
-        layerReader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](
-          LayerId(layerName, 0),
-          numPartitions=numPartitions
-        )//.where(Intersects(queryExtent)).result
+      val srtm = {
+        val temp =
+          layerReader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](
+            LayerId(layerName, 0),
+            numPartitions=numPartitions)
+
+        if (conf.get("spark.master").startsWith("local"))
+          temp
+            .filter()
+            .where(Intersects(queryExtent))
+            .result
+        else
+          temp
+      }
 
       val tobler =
         srtm
