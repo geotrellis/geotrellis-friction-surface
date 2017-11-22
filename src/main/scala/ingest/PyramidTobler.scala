@@ -28,7 +28,7 @@ object ToblerPyramid {
 
     val layerName = "srtm-wsg84-gps"
 
-    val resultName = "tobler-tiles"
+    val resultName = "tobler-tiles-2"
     val layoutScheme = ZoomedLayoutScheme(WebMercator)
 
     val numPartitions =
@@ -52,10 +52,10 @@ object ToblerPyramid {
       .set("spark.driver-memory", "10G")
       .set("spark.driver.cores", "4")
       .set("spark.executor.instances", executors)
-      .set("spark.executor.memory", "10G")
+      .set("spark.executor.memory", "9472M") // XXX
       .set("spark.executor.cores", "4")
-      .set("spark.yarn.executor.memoryOverhead","2G")
-      .set("spark.driver.maxResultSize", "3G")
+      .set("spark.yarn.executor.memoryOverhead","2G") // XXX
+      .set("spark.driver.maxResultSize", "3G") // XXX
 
     implicit val sc = new SparkContext(conf)
 
