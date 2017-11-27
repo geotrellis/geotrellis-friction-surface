@@ -30,7 +30,7 @@ variable "s3_uri" {
 variable "worker_count" {
     type        = "string"
     description = "The number of worker nodes"
-    default     = "70"
+    default     = "50"
 }
 
 variable "emr_service_role" {
@@ -48,5 +48,5 @@ variable "emr_instance_profile" {
 variable "bid_price" {
   type        = "string"
   description = "Bid Price"
-  default     = "0.15"
+  default     = "0.07"
 }

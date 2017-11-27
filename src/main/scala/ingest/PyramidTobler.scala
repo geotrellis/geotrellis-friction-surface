@@ -28,20 +28,20 @@ object ToblerPyramid {
 
     val layerName = "srtm-wsg84-gps"
 
-    val resultName = "tobler-tiles-3"
+    val resultName = "tobler-tiles-incremental"
     val layoutScheme = ZoomedLayoutScheme(WebMercator)
 
     val numPartitions =
       if(args.length > 0) {
         args(0).toInt
       } else {
-        7000
+        5000
       }
     val executors =
       if (args.length > 1) {
         args(1)
       } else {
-        "70"
+        "50"
       }
 
     val conf = new SparkConf()
@@ -52,9 +52,9 @@ object ToblerPyramid {
       .set("spark.driver-memory", "10G")
       .set("spark.driver.cores", "4")
       .set("spark.executor.instances", executors)
-      .set("spark.executor.memory", "18944M") // XXX
-      .set("spark.executor.cores", "8")
-      .set("spark.yarn.executor.memoryOverhead","4G") // XXX
+      .set("spark.executor.memory", "9472M") // XXX
+      .set("spark.executor.cores", "4")
+      .set("spark.yarn.executor.memoryOverhead","2G") // XXX
       .set("spark.driver.maxResultSize", "3G") // XXX
       .set("spark.shuffle.compress", "true")
       .set("spark.shuffle.spill.compress", "true")

@@ -25,7 +25,7 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     bid_price      = "${var.bid_price}"
     instance_count = "${var.worker_count}"
     instance_role  = "CORE"
-    instance_type  = "m3.2xlarge"
+    instance_type  = "m3.xlarge"
     name           = "ingest-core"
   }
 
