@@ -21,6 +21,7 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Positive
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.KryoSerializer
 
 object ToblerPyramid extends CommandApp(
@@ -29,6 +30,7 @@ object ToblerPyramid extends CommandApp(
   header = "Perform the Tobler Ingest",
   main   = {
 
+    /* Ensures that only positive, non-zero values can be given as arguments. */
     type UInt = Int Refined Positive
 
     val partO: Opts[UInt] = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
@@ -75,7 +77,7 @@ object ToblerPyramid extends CommandApp(
         -120.36209106445312,38.8407772667165,
         -119.83612060546874,39.30242456041487)
 
-      val srtm = {
+      val srtm: RDD[(SpatialKey, MultibandTile)] with Metadata[TileLayerMetadata[SpatialKey]] = {
         val temp =
           layerReader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](
             LayerId(layerName, 0),
@@ -90,7 +92,7 @@ object ToblerPyramid extends CommandApp(
           temp
       }
 
-      val tobler =
+      val tobler: TileLayerRDD[SpatialKey] =
         srtm
           .withContext(_.mapValues(_.band(0)))
           .slope()
@@ -123,8 +125,8 @@ object ToblerPyramid extends CommandApp(
           val ymin2 = ymin + (j * subHeightLesser)
           val ymax2 = ymin2 + subHeightGreater
           val extent = Extent(xmin2,  ymin2, xmax2, ymax2)
-          val subDataRasterExtent =
-            RasterExtent(extent, cellSize)
+          val subDataRasterExtent = RasterExtent(extent, cellSize)
+
           val targetRasterExtent =
             ReprojectRasterExtent(
               subDataRasterExtent,
@@ -132,11 +134,12 @@ object ToblerPyramid extends CommandApp(
               dest = layoutScheme.crs)
 
           println(s"Reprojecting to: ${targetRasterExtent.cellSize}")
-          val toblerSubset = ContextRDD(
+
+          val toblerSubset: TileLayerRDD[SpatialKey] = ContextRDD(
             tobler.filter().where(Intersects(extent)).result,
             tobler.metadata)
 
-          val (zoom, tiles) = TileRDDReproject(
+          val (zoom, tiles): (Int, TileLayerRDD[SpatialKey]) = TileRDDReproject(
             rdd = toblerSubset,
             destCrs = layoutScheme.crs,
             targetLayout = Left(layoutScheme),
@@ -147,7 +150,7 @@ object ToblerPyramid extends CommandApp(
 
           Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
             val lid = LayerId(resultName, z)
-            if (i == 0 && j == 0) {
+            if (i === 0 && j === 0) {
               if (attributeStore.layerExists(lid))
                 attributeStore.delete(lid)
               layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
