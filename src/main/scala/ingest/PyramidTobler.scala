@@ -28,7 +28,7 @@ object ToblerPyramid {
 
     val layerName = "srtm-wsg84-gps"
 
-    val resultName = "tobler-tiles-incremental"
+    val resultName = "tobler-tiles-5"
     val layoutScheme = ZoomedLayoutScheme(WebMercator)
 
     val numPartitions =
@@ -149,11 +149,16 @@ object ToblerPyramid {
           Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
             val lid = LayerId(resultName, z)
             if (i == 0 && j == 0) {
-              if (attributeStore.layerExists(lid)) attributeStore.delete(lid)
+              if (attributeStore.layerExists(lid))
+                attributeStore.delete(lid)
               layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
-              }
-            else
-              layerWriter.update(lid, layer, {(t: Tile, _: Tile) => t})
+            }
+            else {
+              if (!attributeStore.layerExists(lid))
+                layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
+              else
+                layerWriter.update(lid, layer, {(t: Tile, _: Tile) => t})
+            }
           }
           j += 1
         }
