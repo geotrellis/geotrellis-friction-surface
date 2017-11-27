@@ -132,21 +132,29 @@ object ToblerPyramid {
               src = tobler.metadata.crs,
               dest = layoutScheme.crs)
 
-          // println(s"Reprojecting to: ${targetRasterExtent.cellSize}")
-          // val (zoom, tiles) = TileRDDReproject(
-          //   rdd = tobler,
-          //   destCrs = layoutScheme.crs,
-          //   targetLayout = Left(layoutScheme),
-          //   bufferSize = 5,
-          //   options=Reproject.Options(
-          //     method = geotrellis.raster.resample.Bilinear,
-          //     targetCellSize = Some(targetRasterExtent.cellSize)))
+          println(s"Reprojecting to: ${targetRasterExtent.cellSize}")
+          val toblerSubset = ContextRDD(
+            tobler.filter().where(Intersects(extent)).result,
+            tobler.metadata)
 
-          // Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
-          //   val lid = LayerId(resultName, z)
-          //   if (attributeStore.layerExists(lid)) attributeStore.delete(lid)
-          //   layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
-          // }
+          val (zoom, tiles) = TileRDDReproject(
+            rdd = toblerSubset,
+            destCrs = layoutScheme.crs,
+            targetLayout = Left(layoutScheme),
+            bufferSize = 5,
+            options=Reproject.Options(
+              method = geotrellis.raster.resample.Bilinear,
+              targetCellSize = Some(targetRasterExtent.cellSize)))
+
+          Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
+            val lid = LayerId(resultName, z)
+            if (i == 0 && j == 0) {
+              if (attributeStore.layerExists(lid)) attributeStore.delete(lid)
+              layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
+              }
+            else
+              layerWriter.update(lid, layer, {(t: Tile, _: Tile) => t})
+          }
           j += 1
         }
         i += 1
