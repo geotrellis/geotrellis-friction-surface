@@ -107,24 +107,49 @@ object ToblerPyramid {
 
       // Determine target cell size using same logic as GDAL
       val dataRasterExtent: RasterExtent = tobler.metadata.layout.createAlignedRasterExtent(tobler.metadata.extent)
-      val targetRasterExtent = ReprojectRasterExtent(dataRasterExtent,
-                                                     src = tobler.metadata.crs,
-                                                     dest = layoutScheme.crs)
+      val Extent(xmin, ymin, xmax, ymax) = dataRasterExtent.extent
+      val cut = 3
+      val width = xmax - xmin
+      val height = ymax - ymin
+      val subWidthLesser = width / cut
+      val subHeightLesser = height / cut
+      val subWidthGreater = width / (cut - 0.25)
+      val subHeightGreater = height / (cut - 0.25)
+      val cellSize = CellSize(dataRasterExtent.cellwidth, dataRasterExtent.cellheight)
 
-      println(s"Reprojecting to: ${targetRasterExtent.cellSize}")
-      val (zoom, tiles) = TileRDDReproject(
-        rdd = tobler,
-        destCrs = layoutScheme.crs,
-        targetLayout = Left(layoutScheme),
-        bufferSize = 5,
-        options=Reproject.Options(
-          method = geotrellis.raster.resample.Bilinear,
-          targetCellSize = Some(targetRasterExtent.cellSize)))
+      var i = 0; while (i < cut) {
+        var j = 0; while (j < cut) {
+          val xmin2 = xmin + (i * subWidthLesser)
+          val xmax2 = xmin2 + subWidthGreater
+          val ymin2 = ymin + (j * subHeightLesser)
+          val ymax2 = ymin2 + subHeightGreater
+          val extent = Extent(xmin2,  ymin2, xmax2, ymax2)
+          val subDataRasterExtent =
+            RasterExtent(extent, cellSize)
+          val targetRasterExtent =
+            ReprojectRasterExtent(
+              subDataRasterExtent,
+              src = tobler.metadata.crs,
+              dest = layoutScheme.crs)
 
-      Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
-        val lid = LayerId(resultName, z)
-        if (attributeStore.layerExists(lid)) attributeStore.delete(lid)
-        layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
+          // println(s"Reprojecting to: ${targetRasterExtent.cellSize}")
+          // val (zoom, tiles) = TileRDDReproject(
+          //   rdd = tobler,
+          //   destCrs = layoutScheme.crs,
+          //   targetLayout = Left(layoutScheme),
+          //   bufferSize = 5,
+          //   options=Reproject.Options(
+          //     method = geotrellis.raster.resample.Bilinear,
+          //     targetCellSize = Some(targetRasterExtent.cellSize)))
+
+          // Pyramid.levelStream(tiles, layoutScheme, zoom, 0).foreach { case (z, layer) =>
+          //   val lid = LayerId(resultName, z)
+          //   if (attributeStore.layerExists(lid)) attributeStore.delete(lid)
+          //   layerWriter.write(lid, layer, ZCurveKeyIndexMethod)
+          // }
+          j += 1
+        }
+        i += 1
       }
     } finally {
       sc.stop()
