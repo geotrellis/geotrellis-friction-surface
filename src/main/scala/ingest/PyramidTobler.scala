@@ -2,47 +2,46 @@ package ingest
 
 import geotrellis.proj4._
 import geotrellis.raster._
-import geotrellis.raster.reproject.{ Reproject, ReprojectRasterExtent}
-import geotrellis.raster.io._
+import geotrellis.raster.reproject.{ Reproject, ReprojectRasterExtent }
 import geotrellis.spark._
 import geotrellis.spark.io._
-import geotrellis.spark.io.kryo._
-import geotrellis.spark.io.s3._
 import geotrellis.spark.io.file._
 import geotrellis.spark.io.index._
-import geotrellis.spark.tiling._
+import geotrellis.spark.io.kryo._
+import geotrellis.spark.io.s3._
 import geotrellis.spark.pyramid._
 import geotrellis.spark.reproject._
+import geotrellis.spark.tiling._
 import geotrellis.vector._
 
+import cats.implicits._
+import com.monovore.decline._
+import com.monovore.decline.refined._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric.Positive
 import org.apache.spark._
-import org.apache.spark.rdd._
 import org.apache.spark.serializer.KryoSerializer
 
-object ToblerPyramid {
-  def main(args: Array[String]): Unit = {
+object ToblerPyramid extends CommandApp(
+
+  name   = "tobler-ingest",
+  header = "Perform the Tobler Ingest",
+  main   = {
+
+    type UInt = Int Refined Positive
+
+    val partO: Opts[UInt] = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
+    val execO: Opts[UInt] = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
+
+    (partO, execO).mapN { (numPartitions, executors) =>
 
     val bucket = "geotrellis-test"
     val prefix = "dg-srtm"
     val catalog = s"s3://${bucket}/${prefix}"
-
     val layerName = "srtm-wsg84-gps"
-
     val resultName = "tobler-tiles-5"
     val layoutScheme = ZoomedLayoutScheme(WebMercator)
-
-    val numPartitions =
-      if(args.length > 0) {
-        args(0).toInt
-      } else {
-        5000
-      }
-    val executors =
-      if (args.length > 1) {
-        args(1)
-      } else {
-        "50"
-      }
 
     val conf = new SparkConf()
       .setIfMissing("spark.master", "local[*]")
@@ -51,7 +50,7 @@ object ToblerPyramid {
       .set("spark.kryo.registrator", classOf[KryoRegistrator].getName)
       .set("spark.driver-memory", "10G")
       .set("spark.driver.cores", "4")
-      .set("spark.executor.instances", executors)
+      .set("spark.executor.instances", executors.value.show)
       .set("spark.executor.memory", "9472M") // XXX
       .set("spark.executor.cores", "4")
       .set("spark.yarn.executor.memoryOverhead","2G") // XXX
@@ -167,5 +166,5 @@ object ToblerPyramid {
     } finally {
       sc.stop()
     }
-  }
-}
+  }}
+)
