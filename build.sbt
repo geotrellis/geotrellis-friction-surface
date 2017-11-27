@@ -1,22 +1,20 @@
-import Dependencies._
+name                      := "srtm-ingest"
+version                   := "0.1.0-SNAPSHOT"
+organization              := "com.azavea"
+scalaVersion in ThisBuild := "2.11.12"
 
-val gtVersion        = "1.2.0-RC2"
+val gtVersion = "1.2.0-RC2"
 
-
-organization := "com.azavea"
-scalaVersion := "2.11.11"
-version      := "0.1.0-SNAPSHOT"
-name := "srtm-ingest"
 libraryDependencies ++= Seq(
   "org.locationtech.geotrellis" %% "geotrellis-spark" % gtVersion,
-  "org.locationtech.geotrellis" %% "geotrellis-s3" % gtVersion,
-  "org.apache.spark"  %% "spark-core"    % "2.1.0" % Provided,
-  "org.apache.hadoop"  % "hadoop-client" % "2.7.3" % Provided,
-  scalaTest % Test
+  "org.locationtech.geotrellis" %% "geotrellis-s3"    % gtVersion,
+  "org.apache.spark"            %% "spark-core"       % "2.2.0" % Provided,
+  "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,
+  "org.scalatest"               %% "scalatest"        % "3.0.1" % Test
 )
 
 resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/geotrellis-snapshots"
-resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
+resolvers += "More LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
 
 test in assembly := {}
 
