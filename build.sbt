@@ -15,10 +15,11 @@ scalacOptions := Seq(
 )
 
 libraryDependencies ++= Seq(
+  "com.azavea"                  %% "vectorpipe"       % "1.0.0-SNAPSHOT",
   "com.monovore"                %% "decline"          % "0.4.0-RC1",
   "com.monovore"                %% "decline-refined"  % "0.4.0-RC1",
   "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,
-  "org.apache.spark"            %% "spark-core"       % "2.2.0" % Provided,
+  "org.apache.spark"            %% "spark-hive"       % "2.2.0" % Provided,
   "org.locationtech.geotrellis" %% "geotrellis-s3"    % gtVersion,
   "org.locationtech.geotrellis" %% "geotrellis-spark" % gtVersion,
   "org.scalatest"               %% "scalatest"        % "3.0.1" % Test,

@@ -22,7 +22,9 @@ import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Positive
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.serializer.KryoSerializer
+import vectorpipe._
 
 object ToblerPyramid extends CommandApp(
 
@@ -62,10 +64,10 @@ object ToblerPyramid extends CommandApp(
       .set("spark.rdd.compress", "true")
       .set("spark.task.maxFailures", "33")
 
-    implicit val sc = new SparkContext(conf)
+    implicit val ss = SparkSession.builder.config(conf).enableHiveSupport.getOrCreate
 
     try {
-      val layerReader = S3LayerReader(bucket, prefix)
+      val layerReader = S3LayerReader(bucket, prefix)(ss.sparkContext)
       val layerWriter = if (conf.get("spark.master").startsWith("local"))
                           FileLayerWriter("/tmp/dg-srtm")
                         else
@@ -167,7 +169,7 @@ object ToblerPyramid extends CommandApp(
         i += 1
       }
     } finally {
-      sc.stop()
+      ss.stop()
     }
   }}
 )
