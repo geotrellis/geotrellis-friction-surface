@@ -35,10 +35,11 @@ object ToblerPyramid extends CommandApp(
     /* Ensures that only positive, non-zero values can be given as arguments. */
     type UInt = Int Refined Positive
 
-    val partO: Opts[UInt] = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
-    val execO: Opts[UInt] = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
+    val partO: Opts[UInt]   = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
+    val execO: Opts[UInt]   = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
+    val pathO: Opts[String] = Opts.option[String]("orc", help = "Path to an ORC file to overlay.")
 
-    (partO, execO).mapN { (numPartitions, executors) =>
+    (partO, execO, pathO).mapN { (numPartitions, executors, orc) =>
 
     val bucket = "geotrellis-test"
     val prefix = "dg-srtm"
@@ -107,6 +108,27 @@ object ToblerPyramid extends CommandApp(
               }
             }
         }
+
+      /* ORC file is assumed to be a snapshot with the most recent versions of every Element. */
+      osm.fromORC(orc) match {
+        case Left(err) => println(err)
+        case Right((ns, ws, _)) => {
+          val roads: RDD[(Long, osm.Way)] = ws.filter { case (_, w) => w.meta.tags.contains("highway") }
+
+          val lines: RDD[Line] = osm.toHistory(ns, roads)._2.map(_.geom)
+
+          /* Silently dumps the `Metadata` portion of the returned value.
+           * It's just a `LayoutDefinition` that we borrowed from `tobler`
+           * anyway, so we don't need it.
+           */
+          val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(1, BitCellType, tobler.metadata.layout)
+
+          val fused: TileLayerRDD[SpatialKey] = ContextRDD(geomTiles.merge(tobler), tobler.metadata)
+
+          // TODO write out layer, then later steps check for that layer existing.
+          // Reorganize this stuff into separate functions?
+        }
+      }
 
       // Determine target cell size using same logic as GDAL
       val dataRasterExtent: RasterExtent = tobler.metadata.layout.createAlignedRasterExtent(tobler.metadata.extent)
