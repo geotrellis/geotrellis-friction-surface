@@ -33,6 +33,7 @@ import scala.util.{ Try, Success, Failure }
 case class Env(
   catalog: String,
   layerName: String,
+  overlayName: String,
   resultName: String,
   layoutScheme: ZoomedLayoutScheme,
   numPartitions: Int,
@@ -82,6 +83,7 @@ object ToblerPyramid extends CommandApp(
       val env: Env = Env(
         catalog       = s"s3://${bucket}/${prefix}",
         layerName     = "srtm-wsg84-gps",
+        overlayName   = "osm-overlay",
         resultName    = "tobler-tiles-5",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
@@ -105,7 +107,12 @@ object Work {
     * hasn't occured yet.
     */
   def roadOverlay(env: Env)(implicit ss: SparkSession): Try[TileLayerRDD[SpatialKey]] = {
-    sourceLayer(env).map(tobler) >>= { osmLayer(env, _) }
+    val lid = LayerId(env.overlayName, 0)
+
+    if (env.writer.attributeStore.layerExists(lid))
+      Try(env.reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](lid, env.numPartitions))
+    else
+      sourceLayer(env).map(tobler) >>= { osmLayer(env, _) } >>= { saveOSM(env, _) }
   }
 
   /** Reduced in size if this is a local ingest. */
@@ -118,7 +125,7 @@ object Work {
     val layer: MultibandTileLayerRDD[SpatialKey] =
       env.reader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](
         LayerId(env.layerName, 0),
-        numPartitions = env.numPartitions)
+        env.numPartitions)
 
     if (env.sparkConf.get("spark.master").startsWith("local"))
       layer.filter().where(Intersects(queryExtent)).result
@@ -161,6 +168,10 @@ object Work {
 
       ContextRDD(geomTiles.merge(tobler), tobler.metadata)
     }
+  }
+
+  def saveOSM(env: Env, osm: TileLayerRDD[SpatialKey]): Try[TileLayerRDD[SpatialKey]] = {
+    Try(env.writer.write(LayerId(env.overlayName, 0), osm, ZCurveKeyIndexMethod)).map(_ => osm)
   }
 
   def pyramid(env: Env, overlay: TileLayerRDD[SpatialKey]): Try[Unit] = Try {
