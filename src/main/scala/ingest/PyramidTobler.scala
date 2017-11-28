@@ -52,28 +52,16 @@ object ToblerPyramid extends CommandApp(
     type UInt = Int Refined Positive
 
     val partO: Opts[UInt]    = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
-    val execO: Opts[UInt]    = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
     val pathO: Opts[String]  = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
     val tinyF: Opts[Boolean] = Opts.flag("tiny", help = "Constrain the job to only run on California.").orFalse
 
-    (partO, execO, pathO, tinyF).mapN { (numPartitions, executors, orc, tiny) =>
+    (partO, pathO, tinyF).mapN { (numPartitions, orc, tiny) =>
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
         .setAppName("Ingest DEM")
         .set("spark.serializer", classOf[KryoSerializer].getName)
         .set("spark.kryo.registrator", classOf[KryoRegistrator].getName)
-        .set("spark.driver-memory", "10G")
-        .set("spark.driver.cores", "4")
-        .set("spark.executor.instances", executors.value.show)
-        .set("spark.executor.memory", "9472M") // XXX
-        .set("spark.executor.cores", "4")
-        .set("spark.yarn.executor.memoryOverhead","2G") // XXX
-        .set("spark.driver.maxResultSize", "3G") // XXX
-        .set("spark.shuffle.compress", "true")
-        .set("spark.shuffle.spill.compress", "true")
-        .set("spark.rdd.compress", "true")
-        .set("spark.task.maxFailures", "33")
 
       implicit val ss = SparkSession.builder.config(conf).enableHiveSupport.getOrCreate
 
