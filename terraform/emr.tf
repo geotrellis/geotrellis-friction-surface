@@ -29,10 +29,10 @@ resource "aws_emr_cluster" "emr-spark-cluster" {
     name           = "ingest-core"
   }
 
-  bootstrap_action {
-    path = "s3://${var.bs_bucket}/${var.bs_prefix}/bootstrap.sh"
-    name = "patch configuration"
-  }
+  # bootstrap_action {
+  #   path = "s3://${var.bs_bucket}/${var.bs_prefix}/bootstrap.sh"
+  #   name = "patch configuration"
+  # }
 }
 
 output "emr-id" {
