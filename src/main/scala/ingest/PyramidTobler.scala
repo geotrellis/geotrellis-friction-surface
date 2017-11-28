@@ -5,7 +5,6 @@ import geotrellis.raster._
 import geotrellis.raster.reproject.{ Reproject, ReprojectRasterExtent }
 import geotrellis.spark._
 import geotrellis.spark.io._
-import geotrellis.spark.io.file._
 import geotrellis.spark.io.index._
 import geotrellis.spark.io.kryo._
 import geotrellis.spark.io.s3._
@@ -31,13 +30,13 @@ import scala.util.{ Try, Success, Failure }
 // --- //
 
 case class Env(
-  catalog: String,
   layerName: String,
   overlayName: String,
   resultName: String,
   layoutScheme: ZoomedLayoutScheme,
   numPartitions: Int,
   orcPath: String,
+  tiny: Boolean,
   sparkConf: SparkConf,
   reader: LayerReader[LayerId],
   writer: LayerWriter[LayerId]
@@ -52,11 +51,12 @@ object ToblerPyramid extends CommandApp(
     /* Ensures that only positive, non-zero values can be given as arguments. */
     type UInt = Int Refined Positive
 
-    val partO: Opts[UInt]   = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
-    val execO: Opts[UInt]   = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
-    val pathO: Opts[String] = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
+    val partO: Opts[UInt]    = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
+    val execO: Opts[UInt]    = Opts.option[UInt]("executors",  help = "Spark executors to use.").withDefault(50)
+    val pathO: Opts[String]  = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
+    val tinyF: Opts[Boolean] = Opts.flag("tiny", help = "Constrain the job to only run on California.").orFalse
 
-    (partO, execO, pathO).mapN { (numPartitions, executors, orc) =>
+    (partO, execO, pathO, tinyF).mapN { (numPartitions, executors, orc, tiny) =>
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
@@ -81,16 +81,16 @@ object ToblerPyramid extends CommandApp(
       val prefix = "dg-srtm"
 
       val env: Env = Env(
-        catalog       = s"s3://${bucket}/${prefix}",
         layerName     = "srtm-wsg84-gps",
         overlayName   = "osm-overlay",
-        resultName    = "tobler-tiles-5",
+        resultName    = "tobler-overlay",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
+        tiny          = tiny,
         sparkConf     = conf,
         reader        = S3LayerReader(bucket, prefix)(ss.sparkContext),
-        writer        = if (conf.get("spark.master").startsWith("local")) FileLayerWriter("/tmp/dg-srtm") else S3LayerWriter(bucket, prefix)
+        writer        = S3LayerWriter(bucket, prefix)
       )
 
       (Work.roadOverlay(env) >>= { Work.pyramid(env, _) }) match {
@@ -118,16 +118,15 @@ object Work {
   /** Reduced in size if this is a local ingest. */
   def sourceLayer(env: Env): Try[MultibandTileLayerRDD[SpatialKey]] = Try {
 
-    lazy val queryExtent = Extent(
-      -120.36209106445312, 38.8407772667165,
-      -119.83612060546874, 39.30242456041487)
+    /* A box around California. */
+    lazy val queryExtent = Extent(-124.62890625, 32.32427558887655, -113.9501953125, 42.16340342422401)
 
     val layer: MultibandTileLayerRDD[SpatialKey] =
       env.reader.read[SpatialKey, MultibandTile, TileLayerMetadata[SpatialKey]](
         LayerId(env.layerName, 0),
         env.numPartitions)
 
-    if (env.sparkConf.get("spark.master").startsWith("local"))
+    if (env.tiny)
       layer.filter().where(Intersects(queryExtent)).result
     else
       layer
