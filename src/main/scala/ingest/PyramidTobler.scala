@@ -117,6 +117,7 @@ object Work {
 
     if (env.tiny) {
       val res = layer.filter().where(Intersects(queryExtent)).result
+      res.persist(StorageLevel.MEMORY_AND_DISK_SER)
       println(res.count)
       res
     } else layer
@@ -136,6 +137,7 @@ object Work {
         }
       }
 
+    res.persist(StorageLevel.MEMORY_AND_DISK_SER)
     println(res.count)
 
     res
@@ -153,6 +155,7 @@ object Work {
 
       val lines: RDD[Line] = osm.toHistory(ns, roads)._2.map(_.geom)
 
+      lines.persist(StorageLevel.MEMORY_AND_DISK_SER)
       println(lines.count)
 
       /* Silently dumps the `Metadata` portion of the returned value.
@@ -161,10 +164,12 @@ object Work {
        */
       val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(1, BitCellType, tobler.metadata.layout)
 
+      geomTiles.persist(StorageLevel.MEMORY_AND_DISK_SER)
       println(geomTiles.count)
 
       val merged = geomTiles.merge(tobler)
 
+      merged.persist(StorageLevel.MEMORY_AND_DISK_SER)
       println(merged.count)
 
       ContextRDD(merged, tobler.metadata)
