@@ -71,8 +71,8 @@ object ToblerPyramid extends CommandApp(
 
       val env: Env = Env(
         layerName     = "srtm-wsg84-gps",
-        overlayName   = "osm-overlay",
-        resultName    = "tobler-overlay",
+        overlayName   = "osm-overlay-PERFTEST",
+        resultName    = "tobler-overlay-PERFTEST",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
@@ -115,14 +115,16 @@ object Work {
         LayerId(env.layerName, 0),
         env.numPartitions)
 
-    if (env.tiny)
-      layer.filter().where(Intersects(queryExtent)).result
-    else
-      layer
+    if (env.tiny) {
+      val res = layer.filter().where(Intersects(queryExtent)).result
+      res.persist(StorageLevel.MEMORY_AND_DISK_SER)
+      println(res.count)
+      res
+    } else layer
   }
 
   def tobler(srtm: MultibandTileLayerRDD[SpatialKey]): TileLayerRDD[SpatialKey] = {
-    srtm
+    val res = srtm
       .withContext(_.mapValues(_.band(0)))
       .slope()
       .withContext { rdd =>
@@ -134,6 +136,11 @@ object Work {
           }
         }
       }
+
+    res.persist(StorageLevel.MEMORY_AND_DISK_SER)
+    println(res.count)
+
+    res
   }
 
   /** Overlay some OSM data onto the Tobler layer. */
@@ -148,13 +155,24 @@ object Work {
 
       val lines: RDD[Line] = osm.toHistory(ns, roads)._2.map(_.geom)
 
+      lines.persist(StorageLevel.MEMORY_AND_DISK_SER)
+      println(lines.count)
+
       /* Silently dumps the `Metadata` portion of the returned value.
        * It's just a `LayoutDefinition` that we borrowed from `tobler`
        * anyway, so we don't need it.
        */
       val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(1, BitCellType, tobler.metadata.layout)
 
-      ContextRDD(geomTiles.merge(tobler), tobler.metadata)
+      geomTiles.persist(StorageLevel.MEMORY_AND_DISK_SER)
+      println(geomTiles.count)
+
+      val merged = geomTiles.merge(tobler)
+
+      merged.persist(StorageLevel.MEMORY_AND_DISK_SER)
+      println(merged.count)
+
+      ContextRDD(merged, tobler.metadata)
     }
   }
 
