@@ -176,7 +176,7 @@ object Work {
     // Determine target cell size using same logic as GDAL
     val dataRasterExtent: RasterExtent = overlay.metadata.layout.createAlignedRasterExtent(overlay.metadata.extent)
     val Extent(xmin, ymin, xmax, ymax) = dataRasterExtent.extent
-    val cut = 3
+    val cut = 1
     val width = xmax - xmin
     val height = ymax - ymin
     val subWidthLesser = width / cut
