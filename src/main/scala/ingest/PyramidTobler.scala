@@ -71,8 +71,8 @@ object ToblerPyramid extends CommandApp(
 
       val env: Env = Env(
         layerName     = "srtm-wsg84-gps",
-        overlayName   = "osm-overlay",
-        resultName    = "tobler-overlay",
+        overlayName   = "osm-overlay-fixedmerge",
+        resultName    = "tobler-overlay-fixedmerge",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
@@ -154,7 +154,15 @@ object Work {
        */
       val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(1, BitCellType, tobler.metadata.layout)
 
-      ContextRDD(geomTiles.merge(tobler), tobler.metadata)
+      val merged: RDD[(SpatialKey, Tile)] = tobler.leftOuterJoin(geomTiles).mapValues {
+        case (v, None)    => v                 /* A Tile that had no overlain Geometries */
+        case (v, Some(w)) => v.combineDouble(w) {
+          case (vp, wp) if isNoData(wp) => vp  /* No overlain Geometry on this pixel */
+          case (vp, _) => vp * 0.8             /* Road detected: Reduce friction by 20% */
+        }
+      }
+
+      ContextRDD(merged, tobler.metadata)
     }
   }
 
