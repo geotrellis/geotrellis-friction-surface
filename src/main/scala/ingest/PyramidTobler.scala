@@ -72,8 +72,8 @@ object ToblerPyramid extends CommandApp(
 
       val env: Env = Env(
         layerName     = "srtm-wsg84-gps",
-        overlayName   = "osm-overlay-fixedmerge",
-        resultName    = "tobler-overlay-fixedmerge",
+        overlayName   = "osm-overlay-water",
+        resultName    = "tobler-overlay-water",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
