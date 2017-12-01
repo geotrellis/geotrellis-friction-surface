@@ -3,6 +3,7 @@ package ingest
 import geotrellis.proj4._
 import geotrellis.raster._
 import geotrellis.raster.reproject.{ Reproject, ReprojectRasterExtent }
+import geotrellis.raster.rasterize.CellValue
 import geotrellis.spark._
 import geotrellis.spark.io._
 import geotrellis.spark.io.index._
@@ -144,21 +145,37 @@ object Work {
 
     /* ORC file is assumed to be a snapshot with the most recent versions of every Element. */
     osm.fromORC(env.orcPath).map { case (ns, ws, _) =>
-      val roads: RDD[(Long, osm.Way)] = ws.filter { case (_, w) => w.meta.tags.contains("highway") }
 
-      val lines: RDD[Line] = osm.toHistory(ns, roads)._2.map(_.geom)
+      val roadsAndWater: RDD[(Long, osm.Way)] = ws.filter { case (_, w) =>
+        w.meta.tags.contains("highway") || w.meta.tags.contains("waterway")
+      }
+
+      val (_, rawLines, rawPolys) = osm.toHistory(ns, roadsAndWater)
+
+      val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
+        ss.sparkContext.union(rawLines.map(identity), rawPolys.map(identity))
+
+      /* The `CellValue`s given here will place roads above water in the rasterized
+       * Tile, with the assumption that some bridge went overtop.
+       */
+      val lines: RDD[Feature[Geometry, CellValue]] = rawLines.map {
+        case Feature(g, m) if m.tags.contains("highway") => Feature(g, CellValue(2, 2))
+        case Feature(g, _) => Feature(g, CellValue(1, 1))  /* Assume it's a waterway */
+      }
 
       /* Silently dumps the `Metadata` portion of the returned value.
        * It's just a `LayoutDefinition` that we borrowed from `tobler`
        * anyway, so we don't need it.
        */
-      val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(1, BitCellType, tobler.metadata.layout)
+      val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(ByteCellType, tobler.metadata.layout)
 
       val merged: RDD[(SpatialKey, Tile)] = tobler.leftOuterJoin(geomTiles).mapValues {
         case (v, None)    => v                 /* A Tile that had no overlain Geometries */
         case (v, Some(w)) => v.combineDouble(w) {
           case (vp, wp) if isNoData(wp) => vp  /* No overlain Geometry on this pixel */
-          case (vp, _) => vp * 0.8             /* Road detected: Reduce friction by 20% */
+          case (vp, 2) => vp * 0.8             /* Road detected: Reduce friction by 20% */
+          case (vp, 1) => Double.NaN           /* Water detected: Set infinite friction */
+          case (vp, _) => vp
         }
       }
 
