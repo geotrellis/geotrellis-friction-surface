@@ -7,7 +7,7 @@ variable "region" {
 variable "bs_bucket" {
     type        = "string"
     description = "S3 Bucket containing the boostrap script (e.g. bucket if the whole path is s3://bucket/containing/bootstrap)"
-    default    = "geotrellis-test"  
+    default    = "geotrellis-test"
 }
 
 variable "bs_prefix" {
@@ -30,7 +30,7 @@ variable "s3_uri" {
 variable "worker_count" {
     type        = "string"
     description = "The number of worker nodes"
-    default     = "1"
+    default     = "50"
 }
 
 variable "emr_service_role" {

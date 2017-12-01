@@ -1,22 +1,33 @@
-import Dependencies._
+name                      := "srtm-ingest"
+version                   := "0.1.0-SNAPSHOT"
+organization              := "com.azavea"
+scalaVersion in ThisBuild := "2.11.12"
 
-val gtVersion        = "1.2.0-RC2"
+val gtVersion = "1.2.0-RC2"
 
+scalacOptions := Seq(
+  "-deprecation",
+  "-Ypartial-unification",
+  "-Ywarn-value-discard",
+  "-Ywarn-unused-import",
+  "-Ywarn-dead-code",
+  "-Ywarn-numeric-widen"
+)
 
-organization := "com.azavea"
-scalaVersion := "2.11.11"
-version      := "0.1.0-SNAPSHOT"
-name := "srtm-ingest"
 libraryDependencies ++= Seq(
+  "com.azavea"                  %% "vectorpipe"       % "1.0.0-SNAPSHOT",
+  "com.monovore"                %% "decline"          % "0.4.0-RC1",
+  "com.monovore"                %% "decline-refined"  % "0.4.0-RC1",
+  "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,
+  "org.apache.spark"            %% "spark-hive"       % "2.2.0" % Provided,
+  "org.locationtech.geotrellis" %% "geotrellis-s3"    % gtVersion,
   "org.locationtech.geotrellis" %% "geotrellis-spark" % gtVersion,
-  "org.locationtech.geotrellis" %% "geotrellis-s3" % gtVersion,
-  "org.apache.spark"  %% "spark-core"    % "2.1.0" % Provided,
-  "org.apache.hadoop"  % "hadoop-client" % "2.7.3" % Provided,
-  scalaTest % Test
+  "org.scalatest"               %% "scalatest"        % "3.0.1" % Test,
+  "org.typelevel"               %% "cats-core"        % "1.0.0-RC1"
 )
 
 resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/geotrellis-snapshots"
-resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
+resolvers += "More LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
 
 test in assembly := {}
 
