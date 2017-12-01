@@ -102,7 +102,7 @@ object Work {
     if (env.writer.attributeStore.layerExists(lid))
       Try(env.reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](lid, env.numPartitions))
     else
-      sourceLayer(env).map(tobler) >>= { osmLayer(env, _) } >>= { saveOSM(env, _) }
+      sourceLayer(env).map(tobler) >>= { osmLayer(env, _) } // >>= { saveOSM(env, _) }
   }
 
   /** Reduced in size if this is a local ingest. */
