@@ -72,8 +72,8 @@ object ToblerPyramid extends CommandApp(
 
       val env: Env = Env(
         layerName     = "srtm-wsg84-gps",
-        overlayName   = "osm-overlay-water",
-        resultName    = "tobler-overlay-water",
+        overlayName   = "osm-overlay-water2",
+        resultName    = "tobler-overlay-water2",
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
@@ -158,7 +158,7 @@ object Work {
       /* The `CellValue`s given here will place roads above water in the rasterized
        * Tile, with the assumption that some bridge went overtop.
        */
-      val lines: RDD[Feature[Geometry, CellValue]] = rawLines.map {
+      val lines: RDD[Feature[Geometry, CellValue]] = fused.map {
         case Feature(g, m) if m.tags.contains("highway") => Feature(g, CellValue(2, 2))
         case Feature(g, _) => Feature(g, CellValue(1, 1))  /* Assume it's a waterway */
       }
