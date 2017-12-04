@@ -150,10 +150,12 @@ object Work {
         w.meta.tags.contains("highway") || w.meta.tags.contains("waterway")
       }
 
-      val (_, rawLines, rawPolys) = osm.toHistory(ns, roadsAndWater)
+      val features: osm.Features = osm.snapshotFeatures(
+        VectorPipe.logNothing, ns, roadsAndWater, ss.sparkContext.emptyRDD
+      )
 
       val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
-        ss.sparkContext.union(rawLines.map(identity), rawPolys.map(identity))
+        ss.sparkContext.union(features.lines.map(identity), features.polygons.map(identity))
 
       /* The `CellValue`s given here will place roads above water in the rasterized
        * Tile, with the assumption that some bridge went overtop.
