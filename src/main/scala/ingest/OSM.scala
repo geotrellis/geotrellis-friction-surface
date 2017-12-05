@@ -5,6 +5,10 @@ import scala.util.{Failure, Success}
 import cats.data.Reader
 import cats.implicits._
 import com.monovore.decline._
+import com.monovore.decline.refined._
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.auto._
+import eu.timepit.refined.numeric.Positive
 import geotrellis.proj4.WebMercator
 import geotrellis.raster._
 import geotrellis.raster.rasterize.CellValue
@@ -25,10 +29,11 @@ import vectorpipe._
 // --- //
 
 case class OSMEnv(
-  ss:     SparkSession,
-  writer: S3LayerWriter,
-  layer:  LayerId,
-  layout: LayoutDefinition
+  ss:         SparkSession,
+  partitions: Int,
+  writer:     S3LayerWriter,
+  layer:      LayerId,
+  layout:     LayoutDefinition
 )
 
 object OSM extends CommandApp(
@@ -37,9 +42,13 @@ object OSM extends CommandApp(
   header = "Perform the OSM-only Ingest",
   main   = {
 
+    /* Ensures that only positive, non-zero values can be given as arguments. */
+    type UInt = Int Refined Positive
+
+    val partO: Opts[UInt]   = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
     val pathO: Opts[String] = Opts.option[String]("orc", help = "Path to an ORC file to rasterize.")
 
-    pathO.map { orc =>
+    (partO, pathO).mapN { (numPartitions, orc) =>
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
@@ -51,6 +60,7 @@ object OSM extends CommandApp(
 
       val env = OSMEnv(
         ss,
+        numPartitions,
         S3LayerWriter(S3AttributeStore("geotrellis-test", "dg-srtm")),
         LayerId("osm-only", 13),
         ZoomedLayoutScheme.layoutForZoom(13, WebMercator.worldExtent, 256)
@@ -70,12 +80,12 @@ object OSMWork {
 
   def rasterize(nodes: RDD[(Long, osm.Node)], ways: RDD[(Long, osm.Way)]): Reader[OSMEnv, Layer] = Reader { env =>
 
-    val roadsAndWater: RDD[(Long, osm.Way)] = ways.filter { case (_, w) =>
+    val roadsAndWater: RDD[(Long, osm.Way)] = ways.repartition(env.partitions / 2).filter { case (_, w) =>
       w.meta.tags.contains("highway") || w.meta.tags.contains("waterway")
     }
 
     val features: osm.Features = osm.snapshotFeatures(
-      VectorPipe.logNothing, nodes, roadsAndWater, env.ss.sparkContext.emptyRDD
+      VectorPipe.logNothing, nodes.repartition(env.partitions / 2), roadsAndWater, env.ss.sparkContext.emptyRDD
     )
 
     val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
@@ -96,7 +106,7 @@ object OSMWork {
     layer.persist(StorageLevel.MEMORY_AND_DISK_SER)
 
     val bounds: KeyBounds[SpatialKey] =
-      layer.map({ case (key, _) => KeyBounds(key, key) }).reduce(_ combine _)
+      layer.map { case (key, _) => KeyBounds(key, key) }.reduce(_ combine _)
 
     val meta = vectorpipe.util.LayerMetadata(env.layout, bounds)
 
