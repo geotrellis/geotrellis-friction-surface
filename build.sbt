@@ -15,7 +15,7 @@ scalacOptions := Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.azavea"                  %% "vectorpipe"       % "1.0.0-SNAPSHOT",
+  "com.azavea"                  %% "vectorpipe"       % "0.1.0",
   "com.monovore"                %% "decline"          % "0.4.0-RC1",
   "com.monovore"                %% "decline-refined"  % "0.4.0-RC1",
   "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,
@@ -28,6 +28,7 @@ libraryDependencies ++= Seq(
 
 resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/geotrellis-snapshots"
 resolvers += "More LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/releases"
+resolvers += Resolver.bintrayRepo("azavea", "maven")
 
 test in assembly := {}
 
