@@ -9,7 +9,7 @@ import com.monovore.decline.refined._
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Positive
-import geotrellis.proj4.WebMercator
+import geotrellis.proj4.LatLng
 import geotrellis.raster._
 import geotrellis.raster.rasterize.CellValue
 import geotrellis.spark._
@@ -63,7 +63,7 @@ object OSM extends CommandApp(
         numPartitions,
         S3LayerWriter(S3AttributeStore("geotrellis-test", "dg-srtm")),
         LayerId("osm-only", 13),
-        ZoomedLayoutScheme.layoutForZoom(13, WebMercator.worldExtent, 256)
+        ZoomedLayoutScheme.layoutForZoom(13, LatLng.worldExtent, 256)
       )
 
       osm.fromORC(orc) match {
