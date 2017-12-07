@@ -21,8 +21,8 @@
             "--conf","spark.rdd.compress=true",
             "--conf","spark.task.maxFailures=33",
             "s3://geotrellis-test/dg-srtm/srtm-ingest-assembly-0.1.0-SNAPSHOT.jar",
-            "--orc","s3://geotrellis-test/dg-srtm/california.orc",
-            "--tiny"
+            "--orc","s3://osm-pds/planet/planet-latest.orc",
+            "--layer","world-tobler"
         ]
     }
 ]

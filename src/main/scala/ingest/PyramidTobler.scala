@@ -5,7 +5,6 @@ import geotrellis.raster._
 import geotrellis.raster.rasterize.CellValue
 import geotrellis.spark._
 import geotrellis.spark.io._
-import geotrellis.spark.io.index._
 import geotrellis.spark.io.kryo._
 import geotrellis.spark.io.s3._
 import geotrellis.spark.tiling._
@@ -18,7 +17,6 @@ import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Positive
 import org.apache.spark._
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.serializer.KryoSerializer
@@ -30,7 +28,6 @@ import scala.util.{ Try, Success, Failure }
 
 case class Env(
   layerName: String,
-  overlayName: String,
   resultName: String,
   layoutScheme: ZoomedLayoutScheme,
   numPartitions: Int,
@@ -54,13 +51,14 @@ object ToblerPyramid extends CommandApp(
 
     val partO: Opts[UInt]    = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(10000)
     val pathO: Opts[String]  = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
+    val outpO: Opts[String]  = Opts.option[String]("layer",    help = "Name of the output layer.")
     val tinyF: Opts[Boolean] = Opts.flag("tiny", help = "Constrain the job to only run on California.").orFalse
 
-    (partO, pathO, tinyF).mapN { (numPartitions, orc, tiny) =>
+    (partO, pathO, outpO, tinyF).mapN { (numPartitions, orc, outputLayer, tiny) =>
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
-        .setAppName("Ingest DEM")
+        .setAppName("Tobler Ingest")
         .set("spark.serializer", classOf[KryoSerializer].getName)
         .set("spark.kryo.registrator", classOf[KryoRegistrator].getName)
 
@@ -71,8 +69,7 @@ object ToblerPyramid extends CommandApp(
 
       val env: Env = Env(
         layerName     = "srtm-wsg84-gps",
-        overlayName   = "osm-overlay-water2",
-        resultName    = "tobler-overlay-water2",
+        resultName    = outputLayer,
         layoutScheme  = ZoomedLayoutScheme(WebMercator),
         numPartitions = numPartitions.value,
         orcPath       = orc,
@@ -96,12 +93,7 @@ object Work {
     * hasn't occured yet.
     */
   def roadOverlay(env: Env)(implicit ss: SparkSession): Try[TileLayerRDD[SpatialKey]] = {
-    val lid = LayerId(env.overlayName, 0)
-
-    if (env.writer.attributeStore.layerExists(lid))
-      Try(env.reader.read[SpatialKey, Tile, TileLayerMetadata[SpatialKey]](lid, env.numPartitions))
-    else
-      sourceLayer(env).map(tobler) >>= { osmLayer(env, _) } // >>= { saveOSM(env, _) }
+    sourceLayer(env).map(tobler) >>= { osmLayer(env, _) }
   }
 
   /** Reduced in size if this is a local ingest. */
@@ -186,11 +178,5 @@ object Work {
 
       ContextRDD(merged, tobler.metadata)
     }
-  }
-
-  def saveOSM(env: Env, osm: TileLayerRDD[SpatialKey]): Try[TileLayerRDD[SpatialKey]] = {
-    osm.persist(StorageLevel.MEMORY_AND_DISK_SER)
-
-    Try(env.writer.write(LayerId(env.overlayName, 0), osm, ZCurveKeyIndexMethod)).map(_ => osm)
   }
 }
