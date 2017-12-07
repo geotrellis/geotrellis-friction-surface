@@ -15,7 +15,7 @@ scalacOptions := Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.azavea"                  %% "vectorpipe"       % "0.1.0",
+  "com.azavea"                  %% "vectorpipe"       % "0.2.0",
   "com.monovore"                %% "decline"          % "0.4.0-RC1",
   "com.monovore"                %% "decline-refined"  % "0.4.0-RC1",
   "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,

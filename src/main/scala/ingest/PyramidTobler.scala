@@ -150,9 +150,7 @@ object Work {
         w.meta.tags.contains("highway") || w.meta.tags.contains("waterway")
       }
 
-      val features: osm.Features = osm.snapshotFeatures(
-        VectorPipe.logNothing, ns, roadsAndWater, ss.sparkContext.emptyRDD
-      )
+      val features: osm.Features = osm.features(ns, roadsAndWater, ss.sparkContext.emptyRDD)
 
       val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
         ss.sparkContext.union(features.lines.map(identity), features.polygons.map(identity))

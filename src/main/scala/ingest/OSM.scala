@@ -89,7 +89,7 @@ object OSMWork {
     }
 
     val features: osm.Features =
-      osm.historicalFeatures(nodes.repartition(env.partitions / 2), roadsAndWater)
+      osm.features(nodes.repartition(env.partitions / 2), roadsAndWater, env.ss.sparkContext.emptyRDD)
 
     val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
       env.ss.sparkContext.union(features.lines.map(identity), features.polygons.map(identity))
@@ -111,7 +111,7 @@ object OSMWork {
     val bounds: KeyBounds[SpatialKey] =
       persisted.map { case (key, _) => KeyBounds(key, key) }.reduce(_ combine _)
 
-    val meta = vectorpipe.util.LayerMetadata(env.layout, bounds)
+    val meta = LayerMetadata(env.layout, bounds)
 
     env.writer.write(env.layer, ContextRDD(persisted, meta), ZCurveKeyIndexMethod)
   }
