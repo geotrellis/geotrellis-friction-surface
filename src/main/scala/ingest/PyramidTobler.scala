@@ -52,7 +52,7 @@ object ToblerPyramid extends CommandApp(
     /* Ensures that only positive, non-zero values can be given as arguments. */
     type UInt = Int Refined Positive
 
-    val partO: Opts[UInt]    = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(5000)
+    val partO: Opts[UInt]    = Opts.option[UInt]("partitions", help = "Spark partitions to use.").withDefault(10000)
     val pathO: Opts[String]  = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
     val tinyF: Opts[Boolean] = Opts.flag("tiny", help = "Constrain the job to only run on California.").orFalse
 
