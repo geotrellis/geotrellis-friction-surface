@@ -39,7 +39,9 @@ case class Env(
   sparkConf: SparkConf,
   reader: LayerReader[LayerId],
   writer: LayerWriter[LayerId]
-)
+) {
+  val partitioner = new ZPartitioner(numPartitions)
+}
 
 object ToblerPyramid extends CommandApp(
 
@@ -113,10 +115,13 @@ object Work {
         LayerId(env.layerName, 0),
         env.numPartitions)
 
-    if (env.tiny)
-      layer.filter().where(Intersects(queryExtent)).result
-    else
-      layer
+    val result =
+      if (env.tiny)
+        layer.filter().where(Intersects(queryExtent)).result
+      else
+        layer
+
+    result.withContext(_.partitionBy(env.partitioner))
   }
 
   def tobler(srtm: MultibandTileLayerRDD[SpatialKey]): TileLayerRDD[SpatialKey] = {
@@ -166,7 +171,8 @@ object Work {
        * It's just a `LayoutDefinition` that we borrowed from `tobler`
        * anyway, so we don't need it.
        */
-      val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(ByteCellType, tobler.metadata.layout)
+      val geomTiles: RDD[(SpatialKey, Tile)] = lines.rasterize(ByteCellType, tobler.metadata.layout,
+                                                               partitioner = Some(env.partitioner))
 
       val merged: RDD[(SpatialKey, Tile)] = tobler.leftOuterJoin(geomTiles).mapValues {
         case (v, None)    => v                 /* A Tile that had no overlain Geometries */
