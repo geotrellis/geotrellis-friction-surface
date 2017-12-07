@@ -3,7 +3,7 @@ version                   := "0.1.0-SNAPSHOT"
 organization              := "com.azavea"
 scalaVersion in ThisBuild := "2.11.12"
 
-val gtVersion = "1.2.0-RC2"
+val gtVersion = "2.0.0-SNAPSHOT"
 
 scalacOptions := Seq(
   "-deprecation",
