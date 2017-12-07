@@ -1,7 +1,7 @@
 package ingest
 
 /*
- * Copyright 2016 Azavea
+ * Copyright 2017 Azavea
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,11 @@ package ingest
  * limitations under the License.
  */
 
-
 import geotrellis.spark._
-import geotrellis.spark.io.index._
-import geotrellis.spark.io.index.zcurve.{Z3, Z2, ZSpatialKeyIndex}
+import geotrellis.spark.io.index.zcurve.Z2
 import geotrellis.util._
 
 import org.apache.spark._
-import org.apache.spark.rdd.{ShuffledRDD, RDD}
-
-import scala.collection.mutable.ArrayBuffer
-import scala.reflect._
 
 /** Spatial partitioner for keys with SpatialComponent
   *
