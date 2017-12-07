@@ -132,8 +132,10 @@ object Work {
             val radians = z * math.Pi / 180.0
             val tobler_kph = 6 * (math.pow(2.718281828, (-3.5 * math.abs(radians + 0.05))))
             3.6 / tobler_kph
-          }
+          }.interpretAs(FloatConstantNoDataCellType)
         }
+      }.mapContext{
+        _.copy(cellType = FloatConstantNoDataCellType)
       }
   }
 
