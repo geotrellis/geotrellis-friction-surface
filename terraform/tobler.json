@@ -20,9 +20,10 @@
             "--conf","spark.shuffle.spill.compress=true",
             "--conf","spark.rdd.compress=true",
             "--conf","spark.task.maxFailures=33",
+            "--conf","spark.executor.extraJavaOptions=-XX:+UseParallelGC",
             "s3://geotrellis-test/dg-srtm/srtm-ingest-assembly-0.1.0-SNAPSHOT.jar",
             "--orc","s3://osm-pds/planet/planet-latest.orc",
-            "--layer","world-tobler"
+            "--layer","world-tobler3"
         ]
     }
 ]

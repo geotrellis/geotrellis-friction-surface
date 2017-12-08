@@ -10,6 +10,7 @@ import geotrellis.spark.reproject._
 
 import eu.timepit.refined.auto._
 import org.apache.spark._
+import org.apache.spark.storage.StorageLevel
 
 import scala.util.Try
 
@@ -32,7 +33,9 @@ object FullPyramid {
         method = geotrellis.raster.resample.Bilinear,
         targetCellSize = Some(targetRasterExtent.cellSize)))
 
-    Pyramid.levelStream(tiles, env.layoutScheme, zoom, 0).foreach { case (z, layer) =>
+    val persisted = tiles.persist(StorageLevel.MEMORY_AND_DISK_SER)
+
+    Pyramid.levelStream(persisted, env.layoutScheme, zoom, 0).foreach { case (z, layer) =>
       val lid = LayerId(env.resultName, z)
       if (env.writer.attributeStore.layerExists(lid)) env.writer.attributeStore.delete(lid)
       env.writer.write(lid, layer, ZCurveKeyIndexMethod)
