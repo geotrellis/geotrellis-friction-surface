@@ -142,11 +142,12 @@ object Work {
     /* ORC file is assumed to be a snapshot with the most recent versions of every Element. */
     osm.fromORC(env.orcPath).map { case (ns, ws, _) =>
 
-      val roadsAndWater: RDD[(Long, osm.Way)] = ws.filter { case (_, w) =>
+      val roadsAndWater: RDD[(Long, osm.Way)] = ws.repartition(env.numPartitions / 2).filter { case (_, w) =>
         w.meta.tags.contains("highway") || w.meta.tags.contains("waterway")
       }
 
-      val features: osm.Features = osm.features(ns, roadsAndWater, ss.sparkContext.emptyRDD)
+      val features: osm.Features =
+        osm.features(ns.repartition(env.numPartitions / 2), roadsAndWater, ss.sparkContext.emptyRDD)
 
       val fused: RDD[Feature[Geometry, osm.ElementMeta]] =
         ss.sparkContext.union(features.lines.map(identity), features.polygons.map(identity))
