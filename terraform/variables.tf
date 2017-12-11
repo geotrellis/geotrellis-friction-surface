@@ -48,5 +48,5 @@ variable "emr_instance_profile" {
 variable "bid_price" {
   type        = "string"
   description = "Bid Price"
-  default     = "0.07"
+  default     = "0.54"
 }
