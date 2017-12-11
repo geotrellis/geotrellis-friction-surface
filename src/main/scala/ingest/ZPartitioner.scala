@@ -27,7 +27,7 @@ import org.apache.spark._
   * Places keys which share n bits of their Z2 index into same partition.
   * Partitioner index is modulo division of remaining bits by partition count.
   */
-class ZPartitioner[K: SpatialComponent](partitions: Int, bits: Int = 8) extends Partitioner {
+case class ZPartitioner[K: SpatialComponent](partitions: Int, bits: Int = 8) extends Partitioner {
 
   def numPartitions: Int = partitions
 
