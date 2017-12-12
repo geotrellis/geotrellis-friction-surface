@@ -8,11 +8,8 @@
             "--class","ingest.ToblerPyramid",
             "--master","yarn",
             "--deploy-mode","cluster",
-            "--driver-memory","9000M",
-            "--driver-cores","4",
-            "--executor-memory","9000M",
-            "--executor-cores","4",
             "--conf","spark.dynamicAllocation.enabled=true",
+            "--conf","spark.shuffle.service.enabled=true",
             "--conf","spark.yarn.executor.memoryOverhead=1G",
             "--conf","spark.yarn.driver.memoryOverhead=1G",
             "--conf","spark.driver.maxResultSize=3G",
@@ -20,9 +17,10 @@
             "--conf","spark.shuffle.spill.compress=true",
             "--conf","spark.rdd.compress=true",
             "--conf","spark.task.maxFailures=33",
+            "--conf","spark.executor.extraJavaOptions=-XX:+UseParallelGC",
             "s3://geotrellis-test/dg-srtm/srtm-ingest-assembly-0.1.0-SNAPSHOT.jar",
-            "--orc","s3://geotrellis-test/dg-srtm/california.orc",
-            "--tiny"
+            "--orc","s3://osm-pds/planet/planet-latest.orc",
+            "--layer","world-tobler3"
         ]
     }
 ]

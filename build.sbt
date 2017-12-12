@@ -3,7 +3,7 @@ version                   := "0.1.0-SNAPSHOT"
 organization              := "com.azavea"
 scalaVersion in ThisBuild := "2.11.12"
 
-val gtVersion = "1.2.0-RC2"
+val gtVersion = "2.0.0-SNAPSHOT"
 
 scalacOptions := Seq(
   "-deprecation",
@@ -15,7 +15,7 @@ scalacOptions := Seq(
 )
 
 libraryDependencies ++= Seq(
-  "com.azavea"                  %% "vectorpipe"       % "0.2.0",
+  "com.azavea"                  %% "vectorpipe"       % "0.2.1",
   "com.monovore"                %% "decline"          % "0.4.0-RC1",
   "com.monovore"                %% "decline-refined"  % "0.4.0-RC1",
   "org.apache.hadoop"            % "hadoop-client"    % "2.7.3" % Provided,
@@ -54,34 +54,48 @@ assemblyMergeStrategy in assembly := {
   case _ => MergeStrategy.first
 }
 
-// sparkAwsRegion := "us-east-1"
-// sparkSubnetId := Some("subnet-4f553375")
-// sparkS3JarFolder := "s3://geotrellis-test/eac/srtm-ingest"
-// sparkInstanceCount := 51
-// sparkClusterName := "XTerrain collab tests"
-// sparkEmrRelease := "emr-5.4.0"
-// sparkEmrServiceRole := "EMR_DefaultRole"
-// sparkInstanceType := "m3.2xlarge"
-// sparkInstanceBidPrice := Some("0.5")
-// sparkInstanceRole := "EMR_EC2_DefaultRole"
-// sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value
-//   .withEc2KeyName("geotrellis-emr")
 
-// import sbtemrspark.EmrConfig
-// sparkEmrConfigs := Some(
-//   Seq(
-//     EmrConfig("spark").withProperties(
-//       // "spark.driver-memory" -> "10000M",
-//       // "spark.driver.cores" -> "4",
-//       // "spark.executor.memory" -> "5120M",
-//       // "spark.executor.cores" -> "2",
-//       // "spark.driver.maxResultSize" -> "3g",
-//       // "spark.dynamicAllocation.enabled" -> "true",
-//       // "spark.yarn.executor.memoryOverhead" -> "700M",
-//       // "spark.yarn.driver.memoryOverhead" -> "0M"
-//     ),
-//     EmrConfig("yarn-site").withProperties(
-//       "yarn.resourcemanager.am.max-attempts" -> "1"
-//     )
-//   )
-// )
+sparkAwsRegion := "us-east-1"
+sparkSubnetId := Some("subnet-4f553375")
+sparkS3JarFolder := s"s3://geotrellis-test/${Environment.user}/srtm-ingest"
+sparkInstanceCount := 101
+sparkClusterName := s"geotrellis-friction-surface - ${Environment.user}"
+sparkEmrRelease := "emr-5.10.0"
+sparkEmrServiceRole := "EMR_DefaultRole"
+sparkInstanceType := "m3.2xlarge"
+sparkInstanceBidPrice := Some("0.5")
+sparkInstanceRole := "EMR_EC2_DefaultRole"
+sparkJobFlowInstancesConfig := sparkJobFlowInstancesConfig.value
+  .withEc2KeyName("geotrellis-emr")
+
+import com.amazonaws.services.elasticmapreduce.model.Application
+sparkRunJobFlowRequest := sparkRunJobFlowRequest.value
+  .withApplications(Seq("Spark", "Ganglia").map(a => new Application().withName(a)):_*)
+
+
+import sbtemrspark.EmrConfig
+sparkEmrConfigs := Some(
+  Seq(
+    EmrConfig("spark").withProperties(
+      "maximizeResourceAllocation" -> "true"
+    ),
+    EmrConfig("spark-defaults").withProperties(
+      "spark.driver.maxResultSize" -> "3G",
+      "spark.dynamicAllocation.enabled" -> "true",
+      "spark.shuffle.service.enabled" -> "true",
+      "spark.shuffle.compress" -> "true",
+      "spark.shuffle.spill.compress" -> "true",
+      "spark.rdd.compress" -> "true",
+      "spark.yarn.executor.memoryOverhead" -> "1G",
+      "spark.yarn.driver.memoryOverhead" -> "1G",
+      "spark.driver.maxResultSize" -> "3G",
+      "spark.executor.extraJavaOptions" -> "-XX:+UseParallelGC -Dgeotrellis.s3.threads.rdd.write=64"
+
+    ),
+    EmrConfig("yarn-site").withProperties(
+      "yarn.resourcemanager.am.max-attempts" -> "1",
+      "yarn.nodemanager.vmem-check-enabled" -> "false",
+      "yarn.nodemanager.pmem-check-enabled" -> "false"
+    )
+  )
+)
