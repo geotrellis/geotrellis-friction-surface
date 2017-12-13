@@ -23,7 +23,8 @@ libraryDependencies ++= Seq(
   "org.locationtech.geotrellis" %% "geotrellis-s3"    % gtVersion,
   "org.locationtech.geotrellis" %% "geotrellis-spark" % gtVersion,
   "org.scalatest"               %% "scalatest"        % "3.0.1" % Test,
-  "org.typelevel"               %% "cats-core"        % "1.0.0-RC1"
+  "org.typelevel"               %% "cats-core"        % "1.0.0-RC1",
+  "org.apache.commons"           % "commons-math"     % "2.2"
 )
 
 resolvers += "LocationTech GeoTrellis Snapshots" at "https://repo.locationtech.org/content/repositories/geotrellis-snapshots"
