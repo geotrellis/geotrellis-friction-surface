@@ -35,7 +35,8 @@ case class Env(
   tiny: Boolean,
   sparkConf: SparkConf,
   reader: LayerReader[LayerId],
-  writer: LayerWriter[LayerId]
+  writer: LayerWriter[LayerId],
+  render: Boolean
 ) {
   val partitioner = new ZPartitioner(numPartitions)
 }
@@ -53,8 +54,9 @@ object ToblerPyramid extends CommandApp(
     val pathO: Opts[String]  = Opts.option[String]("orc",      help = "Path to an ORC file to overlay.")
     val outpO: Opts[String]  = Opts.option[String]("layer",    help = "Name of the output layer.")
     val tinyF: Opts[Boolean] = Opts.flag("tiny", help = "Constrain the job to only run on California.").orFalse
+    val renderB: Opts[Boolean] = Opts.flag("render", help = "Render the layer instead").orFalse
 
-    (partO, pathO, outpO, tinyF).mapN { (numPartitions, orc, outputLayer, tiny) =>
+    (partO, pathO, outpO, tinyF, renderB).mapN { (numPartitions, orc, outputLayer, tiny, render) =>
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
@@ -76,7 +78,8 @@ object ToblerPyramid extends CommandApp(
         tiny          = tiny,
         sparkConf     = conf,
         reader        = S3LayerReader(bucket, prefix)(ss.sparkContext),
-        writer        = S3LayerWriter(bucket, prefix)
+        writer        = S3LayerWriter(bucket, prefix),
+        render        = render
       )
 
       (Work.roadOverlay(env) >>= { FullPyramid(env, _) }) match {
@@ -107,13 +110,10 @@ object Work {
         LayerId(env.layerName, 0),
         env.numPartitions)
 
-    val result =
-      if (env.tiny)
-        layer.filter().where(Intersects(queryExtent)).result
-      else
-        layer
-
-    result.withContext(_.partitionBy(env.partitioner))
+    if (env.tiny)
+      layer.filter().where(Intersects(queryExtent)).result
+    else
+      layer
   }
 
   def tobler(srtm: MultibandTileLayerRDD[SpatialKey]): TileLayerRDD[SpatialKey] = {
@@ -125,11 +125,10 @@ object Work {
             val radians = z * math.Pi / 180.0
             val m = math.tan(radians)
             6 * (math.pow(math.E, (-3.5 * math.abs(m + 0.05))))
-          }.interpretAs(FloatConstantNoDataCellType)
+          }
         }
-      }.mapContext{
-        _.copy(cellType = FloatConstantNoDataCellType)
       }
+
   }
 
   /** Overlay some OSM data onto the Tobler layer. */

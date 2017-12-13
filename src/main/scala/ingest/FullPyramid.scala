@@ -1,9 +1,11 @@
 package ingest
 
 import geotrellis.raster._
+import geotrellis.raster.render._
 import geotrellis.raster.reproject.{ Reproject, ReprojectRasterExtent }
 import geotrellis.spark._
 import geotrellis.spark.io._
+import geotrellis.spark.io.s3._
 import geotrellis.spark.io.index._
 import geotrellis.spark.pyramid._
 import geotrellis.spark.reproject._
@@ -37,8 +39,16 @@ object FullPyramid {
 
     Pyramid.levelStream(persisted, env.layoutScheme, zoom, 0).foreach { case (z, layer) =>
       val lid = LayerId(env.resultName, z)
-      if (env.writer.attributeStore.layerExists(lid)) env.writer.attributeStore.delete(lid)
-      env.writer.write(lid, layer, ZCurveKeyIndexMethod)
+
+      if (env.render) {
+        val colorMap = ColorMap((0.0 to 6.0 by 0.1).toArray, ColorRamps.Inferno)
+        val name = env.resultName
+        layer.mapValues(_.renderPng(colorMap).bytes).saveToS3(key =>
+          s"s3://com.azavea.datahub.tms/srtm/${name}/${z}/${key.col}/${key.row}.png")
+      } else {
+        if (env.writer.attributeStore.layerExists(lid)) env.writer.attributeStore.delete(lid)
+        env.writer.write(lid, layer, ZCurveKeyIndexMethod)
+      }
     }
   }
 }
