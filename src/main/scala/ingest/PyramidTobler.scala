@@ -117,9 +117,8 @@ object Work {
   }
 
   def tobler(srtm: MultibandTileLayerRDD[SpatialKey]): TileLayerRDD[SpatialKey] = {
-    srtm
-      .withContext(_.mapValues(_.band(0)))
-      .slope()
+    val elevation = srtm.withContext(_.mapValues(_.band(0)))
+    Slope.fromWGS84(elevation)
       .withContext { rdd =>
         rdd.mapValues { tile =>
           tile.mapDouble { z =>
