@@ -20,10 +20,10 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.serializer.KryoSerializer
 
 
-object ToblerPyramid extends CommandApp(
+object RenderTobler extends CommandApp(
 
-  name   = "tobler-ingest",
-  header = "Perform the Tobler Ingest",
+  name   = "tobler-render",
+  header = "Perform the Tobler Render",
   main   = {
 
     /* Ensures that only positive, non-zero values can be given as arguments. */
@@ -38,7 +38,7 @@ object ToblerPyramid extends CommandApp(
 
       val conf = new SparkConf()
         .setIfMissing("spark.master", "local[*]")
-        .setAppName("Tobler Ingest")
+        .setAppName("Tobler Render")
         .set("spark.serializer", classOf[KryoSerializer].getName)
         .set("spark.kryo.registrator", classOf[KryoRegistrator].getName)
 
@@ -49,7 +49,6 @@ object ToblerPyramid extends CommandApp(
       val layerName     = "srtm-wsg84-gps"
       val layoutScheme  = ZoomedLayoutScheme(WebMercator)
       val reader        = S3LayerReader(bucket, prefix)(ss.sparkContext)
-      val writer        = S3LayerWriter(bucket, prefix)
       val partitions    = numPartitions.value
       val bbox =
         if (tiny)
@@ -67,8 +66,7 @@ object ToblerPyramid extends CommandApp(
         val pyramid: Stream[(Int, TileLayerRDD[SpatialKey])] =
           Pyramid.levelStream(baseLayer, layoutScheme, baseZoom, 0)
 
-        Work.savePyramid(resultName, pyramid, writer)
-
+        Work.renderPyramid("s3://com.azavea.datahub.tms/srtm",resultName, pyramid)
       } finally {
         ss.stop
       }
