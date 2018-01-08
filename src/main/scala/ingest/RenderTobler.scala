@@ -2,6 +2,7 @@ package ingest
 
 import geotrellis.proj4._
 import geotrellis.raster._
+import geotrellis.raster.resample._
 import geotrellis.spark._
 import geotrellis.spark.pyramid._
 import geotrellis.spark.io.kryo._
@@ -64,7 +65,7 @@ object RenderTobler extends CommandApp(
         val (baseZoom, baseLayer) = Work.reproject(merged, layoutScheme)
 
         val pyramid: Stream[(Int, TileLayerRDD[SpatialKey])] =
-          Pyramid.levelStream(baseLayer, layoutScheme, baseZoom, 0)
+          Pyramid.levelStream(baseLayer, layoutScheme, baseZoom, 0, geotrellis.raster.resample.Bilinear)
 
         Work.renderPyramid("s3://com.azavea.datahub.tms/srtm",resultName, pyramid)
       } finally {
