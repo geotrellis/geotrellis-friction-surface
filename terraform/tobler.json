@@ -5,7 +5,7 @@
         "Jar": "command-runner.jar",
         "Args": [
             "spark-submit",
-            "--class","ingest.ToblerPyramid",
+            "--class","ingest.CougTobler",
             "--master","yarn",
             "--deploy-mode","cluster",
             "--conf","spark.dynamicAllocation.enabled=true",
