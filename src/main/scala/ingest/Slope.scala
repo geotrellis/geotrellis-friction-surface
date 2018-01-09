@@ -18,6 +18,24 @@ object Slope {
     val mt = elevation.metadata.mapTransform
 
     elevation.withContext{ rdd =>
+      rdd.mapPartitions[(SpatialKey, Tile)](
+        { iter =>
+          val interp = new LinearInterpolator()
+          val spline = interp.interpolate(lattitude, zfactors)
+          iter.map { case (key, tile) =>
+            val tileExtent = mt.keyToExtent(key)
+            val tileGridBounds = mt.extentToBounds(tileExtent)
+            val tileCenter = tileExtent.center
+            val zfactor = spline.value(tileCenter.y)
+            key -> TileSlope(tile, Square(1), Some(tileGridBounds), cellSize, zfactor).interpretAs(FloatConstantNoDataCellType)
+          }
+        },
+        preservesPartitioning = true
+      )
+    }.mapContext(_.copy(cellType = FloatConstantNoDataCellType))
+
+    /*
+    elevation.withContext{ rdd =>
       rdd.bufferTiles(bufferSize = 1).mapPartitions[(SpatialKey, Tile)](
         { iter =>
           val interp = new LinearInterpolator()
@@ -31,5 +49,6 @@ object Slope {
         preservesPartitioning = true
       )
     }.mapContext(_.copy(cellType = FloatConstantNoDataCellType))
+  */
   }
 }
