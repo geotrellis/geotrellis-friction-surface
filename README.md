@@ -5,4 +5,5 @@ OSM highways are rasterized and combined with hiking speed layer produces from g
 
 <img width="846" alt="screen shot 2017-12-29 at 1 48 27 pm" src="https://user-images.githubusercontent.com/1158084/34444851-108264ac-ec9f-11e7-9a6a-80c95640617f.png">
 
+[Map](https://tilejson.io/g/fcc88ab18de771cff461b268c454db1f/view)
 
